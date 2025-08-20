@@ -1,16 +1,30 @@
-# watcha_doin_app
+# 📝 WatchaDoinApp
 
-A new Flutter to do project.
+**WatchaDoinApp** is a simple To-Do List application built with **Flutter**.  
+This app helps you manage your daily tasks with a clean UI and local data persistence using **SharedPreferences**.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Features
+- ➕ Add new tasks
+- ✅ Mark tasks as done/undone
+- ❌ Delete tasks
+- 💾 Data persistence with SharedPreferences (tasks stay even after closing the app)
+- 🎨 Simple and clean UI
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 📱 Screenshots
+![WhatsApp Image 2025-08-21 at 03 26 21_88a5df0f](https://github.com/user-attachments/assets/2531e090-c0dd-4231-87c4-e5a22662723d)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
+---
+
+## 🚀 Installation
+Clone the repository and run the app:
+
+```bash
+git clone https://github.com/satriobp-lab/WatchaDoinApp.git
+cd WatchaDoinApp
+flutter pub get
+flutter run
