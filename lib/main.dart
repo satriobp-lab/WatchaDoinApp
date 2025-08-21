@@ -1,137 +1,276 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'models/task.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 void main() {
-  runApp(const ToDoApp());
+  runApp(const MyApp());
 }
 
-class ToDoApp extends StatelessWidget {
-  const ToDoApp({super.key});
+class Task {
+  String title;
+  bool isDone;
+  String priority;
+
+  Task({required this.title, this.isDone = false, this.priority = "Medium"});
+
+  Map<String, dynamic> toMap() => {
+    'title': title,
+    'isDone': isDone,
+    'priority': priority,
+  };
+
+  factory Task.fromMap(Map<String, dynamic> map) => Task(
+    title: map['title'],
+    isDone: map['isDone'],
+    priority: map['priority'],
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Watcha Doin, To-Do List',
+      title: 'Watcha Doin App',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ToDoHomePage(),
+      home: const CalendarScreen(),
     );
   }
 }
 
-class ToDoHomePage extends StatefulWidget {
-  const ToDoHomePage({super.key});
+class CalendarScreen extends StatefulWidget {
+  const CalendarScreen({super.key});
 
   @override
-  State<ToDoHomePage> createState() => _ToDoHomePageState();
+  State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _ToDoHomePageState extends State<ToDoHomePage> {
-  final TextEditingController _controller = TextEditingController();
-  List<Task> _tasks = [];
+class _CalendarScreenState extends State<CalendarScreen> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  Map<String, List<Task>> allTasks = {};
+  List<Task> tasksForSelectedDay = [];
 
   @override
   void initState() {
     super.initState();
-    _loadTasks();
+    _selectedDay = _focusedDay;
+    loadAllTasks();
   }
 
-  // Load tasks dari SharedPreferences
-  Future<void> _loadTasks() async {
+  String getDateKey(DateTime date) =>
+      "${date.year}-${date.month}-${date.day}";
+
+  Future<void> loadAllTasks() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? tasksString = prefs.getString('tasks');
-    if (tasksString != null) {
-      final List decoded = jsonDecode(tasksString);
-      setState(() {
-        _tasks = decoded.map((e) => Task.fromJson(e)).toList();
-      });
+    final keys = prefs.getKeys();
+
+    Map<String, List<Task>> temp = {};
+    for (var key in keys) {
+      final data = prefs.getString(key);
+      if (data != null) {
+        List decoded = jsonDecode(data);
+        temp[key] = decoded.map((e) => Task.fromMap(e)).toList();
+      }
+    }
+
+    setState(() {
+      allTasks = temp;
+      tasksForSelectedDay = allTasks[getDateKey(_selectedDay!)] ?? [];
+    });
+  }
+
+  Future<void> saveTasks(DateTime day, List<Task> tasks) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(getDateKey(day),
+        jsonEncode(tasks.map((t) => t.toMap()).toList()));
+    await loadAllTasks();
+  }
+
+  void addTask(String title) {
+    setState(() {
+      tasksForSelectedDay.add(Task(title: title));
+    });
+    saveTasks(_selectedDay!, tasksForSelectedDay);
+  }
+
+  void toggleTask(int index) {
+    setState(() {
+      tasksForSelectedDay[index].isDone = !tasksForSelectedDay[index].isDone;
+    });
+    saveTasks(_selectedDay!, tasksForSelectedDay);
+  }
+
+  void deleteTask(int index) {
+    setState(() {
+      tasksForSelectedDay.removeAt(index);
+    });
+    saveTasks(_selectedDay!, tasksForSelectedDay);
+  }
+
+  void updatePriority(int index, String priority) {
+    setState(() {
+      tasksForSelectedDay[index].priority = priority;
+    });
+    saveTasks(_selectedDay!, tasksForSelectedDay);
+  }
+
+  Color getPriorityColor(String priority) {
+    switch (priority) {
+      case "High":
+        return Colors.red.shade200;
+      case "Medium":
+        return Colors.orange.shade200;
+      case "Low":
+        return Colors.green.shade200;
+      default:
+        return Colors.grey.shade200;
     }
   }
 
-  // Simpan tasks ke SharedPreferences
-  Future<void> _saveTasks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String encoded = jsonEncode(_tasks.map((e) => e.toJson()).toList());
-    await prefs.setString('tasks', encoded);
+  Future<void> showAddTaskDialog() async {
+    TextEditingController controller = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Add Task"),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: "Enter task"),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel")),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  addTask(controller.text);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text("Add"),
+            )
+          ],
+        );
+      },
+    );
   }
 
-  void _addTask(String title) {
-    if (title.isEmpty) return;
-    setState(() {
-      _tasks.add(Task(title: title));
-      _controller.clear();
-    });
-    _saveTasks();
+  Future<void> confirmDelete(int index) async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Konfirmasi"),
+          content: const Text("Yakin mau hapus task ini?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () {
+                deleteTask(index);
+                Navigator.pop(context);
+              },
+              child: const Text("Hapus"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  void _toggleTask(int index) {
-    setState(() {
-      _tasks[index].isDone = !_tasks[index].isDone;
-    });
-    _saveTasks();
-  }
-
-  void _deleteTask(int index) {
-    setState(() {
-      _tasks.removeAt(index);
-    });
-    _saveTasks();
+  List<Task> getEventsForDay(DateTime day) {
+    return allTasks[getDateKey(day)] ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('To-Do List')),
+      appBar: AppBar(title: const Text("Watcha Doin App")),
       body: Column(
         children: [
-          // Input tambah task
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      labelText: "Tambah task...",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => _addTask(_controller.text),
-                  child: const Text("Add"),
-                ),
-              ],
+          // Calendar tetap fixed
+          TableCalendar<Task>(
+            focusedDay: _focusedDay,
+            firstDay: DateTime(2000),
+            lastDay: DateTime(2100),
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+                tasksForSelectedDay = allTasks[getDateKey(selectedDay)] ?? [];
+              });
+            },
+            eventLoader: getEventsForDay,
+            calendarStyle: const CalendarStyle(
+              markerDecoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
-          // List task
+          const SizedBox(height: 8),
+
+          // LIST TASK dibungkus Expanded biar fleksibel scroll
           Expanded(
-            child: _tasks.isEmpty
-                ? const Center(child: Text("Belum ada task"))
+            child: tasksForSelectedDay.isEmpty
+                ? const Center(
+              child: Text(
+                "Belum ada task untuk hari ini",
+                style: TextStyle(
+                    fontSize: 16, fontStyle: FontStyle.italic),
+              ),
+            )
                 : ListView.builder(
-              itemCount: _tasks.length,
+              itemCount: tasksForSelectedDay.length,
               itemBuilder: (context, index) {
-                final task = _tasks[index];
+                final task = tasksForSelectedDay[index];
                 return Card(
+                  color: getPriorityColor(task.priority).withOpacity(0.6),
                   child: ListTile(
-                    leading: Checkbox(
-                      value: task.isDone,
-                      onChanged: (_) => _toggleTask(index),
-                    ),
                     title: Text(
                       task.title,
                       style: TextStyle(
                         decoration: task.isDone
                             ? TextDecoration.lineThrough
-                            : TextDecoration.none,
+                            : null,
                       ),
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteTask(index),
+                    subtitle: Text("Priority: ${task.priority}"),
+                    leading: Checkbox(
+                      value: task.isDone,
+                      onChanged: (val) => toggleTask(index),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PopupMenuButton<String>(
+                          onSelected: (value) =>
+                              updatePriority(index, value),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                                value: "High", child: Text("High")),
+                            const PopupMenuItem(
+                                value: "Medium", child: Text("Medium")),
+                            const PopupMenuItem(
+                                value: "Low", child: Text("Low")),
+                          ],
+                          child: const Icon(Icons.more_vert),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => confirmDelete(index),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -139,6 +278,10 @@ class _ToDoHomePageState extends State<ToDoHomePage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: showAddTaskDialog,
+        child: const Icon(Icons.add),
       ),
     );
   }
