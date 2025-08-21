@@ -18,6 +18,7 @@ It helps you manage your daily tasks with an intuitive calendar view, task prior
 
 ## 📸 Screenshots
 **Before**
+![WhatsApp Image 2025-08-21 at 03 26 18_6d74d6ed](https://github.com/user-attachments/assets/ff3d5956-269f-4428-8cee-d63aa2a4461b)
 <img src="https://github.com/user-attachments/assets/c26027cb-342a-49dd-8309-a3dc301be5a8)" width="250" />
 
 **After add new Fitur**
