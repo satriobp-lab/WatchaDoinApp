@@ -1,21 +1,26 @@
 # 📝 WatchaDoinApp
 
-**WatchaDoinApp** is a simple To-Do List application built with **Flutter**.  
-This app helps you manage your daily tasks with a clean UI and local data persistence using **SharedPreferences**.
+**WatchaDoinApp** is a simple **To-Do List & Calendar app** built with **Flutter**.  
+It helps you manage your daily tasks with an intuitive calendar view, task priorities, and local data persistence using **SharedPreferences**.
 
 ---
 
 ## ✨ Features
+- 📆 Calendar view with task markers per day (new fitur)
 - ➕ Add new tasks
 - ✅ Mark tasks as done/undone
-- ❌ Delete tasks
-- 💾 Data persistence with SharedPreferences (tasks stay even after closing the app)
-- 🎨 Simple and clean UI
+- 🎯 Set task priority (High / Medium / Low) (new fitur)
+- ❌ Delete tasks (with confirmation dialog)
+- 💾 Local data persistence using `SharedPreferences`
+- 🎨 Clean and responsive UI
 
 ---
 
 ## 📱 Screenshots
-![WhatsApp Image 2025-08-21 at 03 26 21_88a5df0f](https://github.com/user-attachments/assets/2531e090-c0dd-4231-87c4-e5a22662723d)
+![WhatsApp Image 2025-08-21 at 21 20 26_d83bc48d](https://github.com/user-attachments/assets/7953e01d-f682-44f2-823c-691e23d28071)
+![WhatsApp Image 2025-08-21 at 21 19 42_8d18d289](https://github.com/user-attachments/assets/5e65f946-156e-4998-832a-862e33078d90)
+
+
 
 
 ---
