@@ -17,6 +17,10 @@ It helps you manage your daily tasks with an intuitive calendar view, task prior
 ---
 
 ## 📸 Screenshots
+**Before**
+<img src="https://github.com/user-attachments/assets/c26027cb-342a-49dd-8309-a3dc301be5a8)" width="250" />
+
+**After add new Fitur**
 <img src="https://github.com/user-attachments/assets/7953e01d-f682-44f2-823c-691e23d28071" width="250" />
 <img src="https://github.com/user-attachments/assets/5e65f946-156e-4998-832a-862e33078d90" width="250" />
 
