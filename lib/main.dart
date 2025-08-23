@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -11,19 +12,27 @@ class Task {
   String title;
   bool isDone;
   String priority;
+  String? deadline; // format "hh:mm a" (AM/PM)
 
-  Task({required this.title, this.isDone = false, this.priority = "Medium"});
+  Task({
+    required this.title,
+    this.isDone = false,
+    this.priority = "Medium",
+    this.deadline,
+  });
 
   Map<String, dynamic> toMap() => {
     'title': title,
     'isDone': isDone,
     'priority': priority,
+    'deadline': deadline,
   };
 
   factory Task.fromMap(Map<String, dynamic> map) => Task(
     title: map['title'],
     isDone: map['isDone'],
     priority: map['priority'],
+    deadline: map['deadline'],
   );
 }
 
@@ -47,21 +56,38 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class _CalendarScreenState extends State<CalendarScreen>
+    with SingleTickerProviderStateMixin {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<String, List<Task>> allTasks = {};
   List<Task> tasksForSelectedDay = [];
 
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    _tabController = TabController(length: 2, vsync: this);
+
+    // Penting: trigger rebuild saat pindah tab supaya FAB ikut berubah
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && mounted) {
+        setState(() {});
+      }
+    });
+
     loadAllTasks();
   }
 
-  String getDateKey(DateTime date) =>
-      "${date.year}-${date.month}-${date.day}";
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  String getDateKey(DateTime date) => "${date.year}-${date.month}-${date.day}";
 
   Future<void> loadAllTasks() async {
     final prefs = await SharedPreferences.getInstance();
@@ -84,8 +110,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Future<void> saveTasks(DateTime day, List<Task> tasks) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(getDateKey(day),
-        jsonEncode(tasks.map((t) => t.toMap()).toList()));
+    await prefs.setString(
+        getDateKey(day), jsonEncode(tasks.map((t) => t.toMap()).toList()));
     await loadAllTasks();
   }
 
@@ -115,6 +141,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
       tasksForSelectedDay[index].priority = priority;
     });
     saveTasks(_selectedDay!, tasksForSelectedDay);
+  }
+
+  Future<void> updateDeadline(int index) async {
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (pickedTime != null) {
+      final now = DateTime.now();
+      final dt = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+      final formatted = DateFormat("hh:mm a").format(dt);
+
+      setState(() {
+        tasksForSelectedDay[index].deadline = formatted;
+      });
+      saveTasks(_selectedDay!, tasksForSelectedDay);
+    }
   }
 
   Color getPriorityColor(String priority) {
@@ -191,98 +241,209 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return allTasks[getDateKey(day)] ?? [];
   }
 
+  DateTime? _parseDeadline(String? s) {
+    if (s == null) return null;
+    try {
+      return DateFormat('hh:mm a').parse(s);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Watcha Doin App")),
-      body: Column(
+      appBar: AppBar(
+        title: const Text("Watcha Doin App"),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: "Tasks"),
+            Tab(text: "Summary"),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          // Calendar tetap fixed
-          TableCalendar<Task>(
-            focusedDay: _focusedDay,
-            firstDay: DateTime(2000),
-            lastDay: DateTime(2100),
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-                tasksForSelectedDay = allTasks[getDateKey(selectedDay)] ?? [];
-              });
-            },
-            eventLoader: getEventsForDay,
-            calendarStyle: const CalendarStyle(
-              markerDecoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
+          // ===== TAB TASKS =====
+          Column(
+            children: [
+              TableCalendar<Task>(
+                focusedDay: _focusedDay,
+                firstDay: DateTime(2000),
+                lastDay: DateTime(2100),
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                    tasksForSelectedDay =
+                        allTasks[getDateKey(selectedDay)] ?? [];
+                  });
+                },
+                eventLoader: getEventsForDay,
+                calendarStyle: const CalendarStyle(
+                  markerDecoration: BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // LIST TASK dibungkus Expanded biar fleksibel scroll
-          Expanded(
-            child: tasksForSelectedDay.isEmpty
-                ? const Center(
-              child: Text(
-                "Belum ada task untuk hari ini",
-                style: TextStyle(
-                    fontSize: 16, fontStyle: FontStyle.italic),
-              ),
-            )
-                : ListView.builder(
-              itemCount: tasksForSelectedDay.length,
-              itemBuilder: (context, index) {
-                final task = tasksForSelectedDay[index];
-                return Card(
-                  color: getPriorityColor(task.priority).withOpacity(0.6),
-                  child: ListTile(
-                    title: Text(
-                      task.title,
-                      style: TextStyle(
-                        decoration: task.isDone
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
-                    ),
-                    subtitle: Text("Priority: ${task.priority}"),
-                    leading: Checkbox(
-                      value: task.isDone,
-                      onChanged: (val) => toggleTask(index),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        PopupMenuButton<String>(
-                          onSelected: (value) =>
-                              updatePriority(index, value),
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                                value: "High", child: Text("High")),
-                            const PopupMenuItem(
-                                value: "Medium", child: Text("Medium")),
-                            const PopupMenuItem(
-                                value: "Low", child: Text("Low")),
+              const SizedBox(height: 8),
+              Expanded(
+                child: tasksForSelectedDay.isEmpty
+                    ? const Center(
+                  child: Text(
+                    "Belum ada task untuk hari ini",
+                    style: TextStyle(
+                        fontSize: 16, fontStyle: FontStyle.italic),
+                  ),
+                )
+                    : ListView.builder(
+                  itemCount: tasksForSelectedDay.length,
+                  itemBuilder: (context, index) {
+                    final task = tasksForSelectedDay[index];
+                    return Card(
+                      color:
+                      getPriorityColor(task.priority).withOpacity(0.6),
+                      child: ListTile(
+                        title: Text(
+                          task.title,
+                          style: TextStyle(
+                            decoration: task.isDone
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Priority: ${task.priority}"),
+                            if (task.deadline != null)
+                              Text("Deadline: ${task.deadline}"),
                           ],
-                          child: const Icon(Icons.more_vert),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => confirmDelete(index),
+                        leading: Checkbox(
+                          value: task.isDone,
+                          onChanged: (val) => toggleTask(index),
                         ),
-                      ],
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == "set_priority") {
+                                  showMenu(
+                                    context: context,
+                                    position:
+                                    const RelativeRect.fromLTRB(
+                                        200, 400, 0, 0),
+                                    items: const [
+                                      PopupMenuItem(
+                                          value: "High",
+                                          child: Text("High")),
+                                      PopupMenuItem(
+                                          value: "Medium",
+                                          child: Text("Medium")),
+                                      PopupMenuItem(
+                                          value: "Low",
+                                          child: Text("Low")),
+                                    ],
+                                  ).then((val) {
+                                    if (val != null) {
+                                      updatePriority(index, val);
+                                    }
+                                  });
+                                } else if (value == "set_deadline") {
+                                  updateDeadline(index);
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                    value: "set_priority",
+                                    child: Text("Set Priority")),
+                                PopupMenuItem(
+                                    value: "set_deadline",
+                                    child: Text("Set Deadline")),
+                              ],
+                              child: const Icon(Icons.more_vert),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.red),
+                              onPressed: () => confirmDelete(index),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          // ===== TAB SUMMARY (semua tanggal) =====
+          allTasks.isEmpty
+              ? const Center(
+            child: Text(
+              "Belum ada task sama sekali",
+              style:
+              TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+            ),
+          )
+              : ListView(
+            children: allTasks.entries.expand<Widget>((entry) {
+              final dateKey = entry.key;
+              final tasks = entry.value
+                  .where((task) => !task.isDone)
+                  .toList()
+                ..sort((a, b) {
+                  final da = _parseDeadline(a.deadline);
+                  final db = _parseDeadline(b.deadline);
+                  if (da == null && db == null) return 0;
+                  if (da == null) return 1; // tanpa deadline di bawah
+                  if (db == null) return -1;
+                  return da.compareTo(db);
+                });
+
+              if (tasks.isEmpty) {
+                return const <Widget>[];
+              }
+
+              return <Widget>[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16),
+                  child: Text(
+                    "Tanggal: $dateKey",
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ...tasks.map<Widget>(
+                      (task) => ListTile(
+                    leading: const Icon(Icons.event_note),
+                    title: Text(task.title),
+                    subtitle: Text(
+                      "Priority: ${task.priority} | Deadline: ${task.deadline ?? '-'}",
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+                const Divider(height: 16),
+              ];
+            }).toList(),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      // FAB hanya muncul di tab Tasks
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton(
         onPressed: showAddTaskDialog,
         child: const Icon(Icons.add),
-      ),
+      )
+          : null,
     );
   }
 }
