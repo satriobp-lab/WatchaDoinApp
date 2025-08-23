@@ -1,8 +1,6 @@
 # 📝 WatchaDoinApp
 
-**WatchaDoinApp** is a simple **To-Do List & Calendar app** built with **Flutter**.  
-It helps you manage your daily tasks with an intuitive calendar view, task priorities, deadlines, and a summary tab for better daily planning.  
-All data is saved locally using **SharedPreferences**.
+**WatchaDoinApp** is a simple **To-Do List & Calendar app** built with **Flutter**. It helps you manage your daily tasks with an intuitive calendar view, task priorities, deadlines, and a summary tab for better daily planning. All data is saved locally using **SharedPreferences**.
 
 ---
 
@@ -36,12 +34,9 @@ All data is saved locally using **SharedPreferences**.
 
 **Third build (with new features: Deadline, Summary)**  
 <br>
-<img src="![WhatsApp Image 2025-08-23 at 23 53 53_a5c10397](https://github.com/user-attachments/assets/3d1a47fc-37fe-49cf-bdac-b5534671f2ac)
-" width="250" />
-<img src="![WhatsApp Image 2025-08-23 at 23 51 58_d39ce99b](https://github.com/user-attachments/assets/7b2be34c-27e7-467d-9cc9-a90ee4fbfafa)
-" width="250" />
-<img src="![WhatsApp Image 2025-08-23 at 23 53 55_fbe39aa3](https://github.com/user-attachments/assets/2539af37-3875-4a97-b6dc-770dc686b575)
-" width="250" />
+<img src="https://github.com/user-attachments/assets/3d1a47fc-37fe-49cf-bdac-b5534671f2ac" width="250" />
+<img src="https://github.com/user-attachments/assets/7b2be34c-27e7-467d-9cc9-a90ee4fbfafa" width="250" />
+<img src="https://github.com/user-attachments/assets/2539af37-3875-4a97-b6dc-770dc686b575" width="250" />
 
 ## 🚀 Installation
 
