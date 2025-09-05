@@ -69,9 +69,8 @@ class _CalendarScreenState extends State<CalendarScreen>
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
 
-    // Penting: trigger rebuild saat pindah tab supaya FAB ikut berubah
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging && mounted) {
         setState(() {});
@@ -250,6 +249,63 @@ class _CalendarScreenState extends State<CalendarScreen>
     }
   }
 
+  // 🔹 Widget untuk Overdue & Completed page
+  Widget buildFilteredTasksPage(
+      bool Function(Task) filter,
+      String emptyText, {
+        IconData icon = Icons.event_note, // default
+        Color iconColor = Colors.blueGrey,
+      }) {
+    if (allTasks.isEmpty) {
+      return Center(
+        child: Text(emptyText,
+            style: const TextStyle(
+                fontSize: 16, fontStyle: FontStyle.italic)),
+      );
+    }
+
+    final filteredEntries = allTasks.entries.where((entry) {
+      final tasks = entry.value.where(filter).toList();
+      return tasks.isNotEmpty;
+    }).toList();
+
+    if (filteredEntries.isEmpty) {
+      return Center(
+        child: Text(emptyText,
+            style: const TextStyle(
+                fontSize: 16, fontStyle: FontStyle.italic)),
+      );
+    }
+
+    return ListView(
+      children: filteredEntries.expand<Widget>((entry) {
+        final dateKey = entry.key;
+        final tasks = entry.value.where(filter).toList();
+
+        return <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
+            child: Text(
+              "Tanggal: $dateKey",
+              style:
+              const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ...tasks.map(
+                (task) => ListTile(
+              leading: Icon(icon, color: iconColor),
+              title: Text(task.title),
+              subtitle: Text(
+                "Priority: ${task.priority} | Deadline: ${task.deadline ?? '-'}",
+              ),
+            ),
+          ),
+          const Divider(height: 16),
+        ];
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -260,6 +316,8 @@ class _CalendarScreenState extends State<CalendarScreen>
           tabs: const [
             Tab(text: "Tasks"),
             Tab(text: "Summary"),
+            Tab(text: "Overdue"),
+            Tab(text: "Completed"),
           ],
         ),
       ),
@@ -384,33 +442,21 @@ class _CalendarScreenState extends State<CalendarScreen>
             ],
           ),
 
-          // ===== TAB SUMMARY (semua tanggal) =====
+          // ===== TAB SUMMARY =====
           allTasks.isEmpty
               ? const Center(
             child: Text(
               "Belum ada task sama sekali",
-              style:
-              TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  fontSize: 16, fontStyle: FontStyle.italic),
             ),
           )
               : ListView(
             children: allTasks.entries.expand<Widget>((entry) {
               final dateKey = entry.key;
-              final tasks = entry.value
-                  .where((task) => !task.isDone)
-                  .toList()
-                ..sort((a, b) {
-                  final da = _parseDeadline(a.deadline);
-                  final db = _parseDeadline(b.deadline);
-                  if (da == null && db == null) return 0;
-                  if (da == null) return 1; // tanpa deadline di bawah
-                  if (db == null) return -1;
-                  return da.compareTo(db);
-                });
+              final tasks = entry.value;
 
-              if (tasks.isEmpty) {
-                return const <Widget>[];
-              }
+              if (tasks.isEmpty) return const <Widget>[];
 
               return <Widget>[
                 Padding(
@@ -422,22 +468,42 @@ class _CalendarScreenState extends State<CalendarScreen>
                         fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                ...tasks.map<Widget>(
+                ...tasks.map(
                       (task) => ListTile(
                     leading: const Icon(Icons.event_note),
                     title: Text(task.title),
                     subtitle: Text(
-                      "Priority: ${task.priority} | Deadline: ${task.deadline ?? '-'}",
-                    ),
+                        "Priority: ${task.priority} | Deadline: ${task.deadline ?? '-'}"),
                   ),
                 ),
                 const Divider(height: 16),
               ];
             }).toList(),
           ),
+
+          // ===== TAB OVERDUE =====
+          buildFilteredTasksPage(
+                (task) {
+              final deadline = _parseDeadline(task.deadline);
+              return !task.isDone &&
+                  deadline != null &&
+                  deadline.isBefore(DateTime.now());
+            },
+            "Tidak ada overdue task",
+            icon: Icons.warning_amber_rounded,
+            iconColor: Colors.red,
+          ),
+
+          // ===== TAB COMPLETED =====
+          buildFilteredTasksPage(
+                (task) => task.isDone,
+            "Tidak ada completed task",
+            icon: Icons.check_circle,
+            iconColor: Colors.green,
+          ),
+
         ],
       ),
-      // FAB hanya muncul di tab Tasks
       floatingActionButton: _tabController.index == 0
           ? FloatingActionButton(
         onPressed: showAddTaskDialog,
