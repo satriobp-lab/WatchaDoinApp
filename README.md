@@ -1,6 +1,6 @@
 # 📝 WatchaDoinApp
 
-**WatchaDoinApp** is a simple **To-Do List & Calendar app** built with **Flutter**. It helps you manage your daily tasks with an intuitive calendar view, task priorities, deadlines, and a summary tab for better daily planning. All data is saved locally using **SharedPreferences**.
+**WatchaDoinApp** is a simple **To-Do List & Calendar app** built with **Flutter**. It helps you manage your daily tasks with an intuitive calendar view, task priorities, deadlines, and different summary tabs for better daily planning. All data is saved locally using **SharedPreferences**.
 
 ---
 
@@ -9,8 +9,10 @@
 - ➕ Add new tasks  
 - ✅ Mark tasks as done/undone  
 - 🎯 Set task priority (High / Medium / Low)  
-- ⏰ Set task deadline (with AM/PM format) **(new feature)**  
-- 📊 Summary tab: view all upcoming tasks from every date, sorted by deadline **(new feature)**  
+- ⏰ Set task deadline (with AM/PM format)  
+- 📊 Summary tab: view all tasks from every date
+- ⚠️ Overdue tab: automatically groups tasks that missed their deadlines **(new feature)**
+- 🟢 Completed tab: view all finished tasks with clear ✅ status **(new feature)**
 - ❌ Delete tasks (with confirmation dialog)  
 - 💾 Local data persistence using `SharedPreferences`  
 - 🎨 Clean and responsive UI  
@@ -37,6 +39,11 @@
 <img src="https://github.com/user-attachments/assets/3d1a47fc-37fe-49cf-bdac-b5534671f2ac" width="250" />
 <img src="https://github.com/user-attachments/assets/7b2be34c-27e7-467d-9cc9-a90ee4fbfafa" width="250" />
 <img src="https://github.com/user-attachments/assets/2539af37-3875-4a97-b6dc-770dc686b575" width="250" />
+
+**Fourth build (with new features: Overdue & Completed tabs)**  
+<br>
+<img src="https://github.com/user-attachments/assets/a9858eb6-a1c0-4505-8783-4258d04d69e8" width="250" />
+<img src="https://github.com/user-attachments/assets/51da7ca5-9ae2-4e41-a9f8-12967cc832fb" width="250" />
 
 ## 🚀 Installation
 
