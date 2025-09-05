@@ -40,6 +40,8 @@
 <img src="https://github.com/user-attachments/assets/7b2be34c-27e7-467d-9cc9-a90ee4fbfafa" width="250" />
 <img src="https://github.com/user-attachments/assets/2539af37-3875-4a97-b6dc-770dc686b575" width="250" />
 
+---
+
 **Fourth build (with new features: Overdue & Completed tabs)**  
 <br>
 <img src="https://github.com/user-attachments/assets/a9858eb6-a1c0-4505-8783-4258d04d69e8" width="250" />
